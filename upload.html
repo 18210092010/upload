@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>Document</title>
+		<style type="text/css">
+			* {
+				margin: 0;
+				padding: 0;
+			}
+			
+			html,
+			body {
+				height: 100%;
+			}
+			div{
+				width: 200px;
+				height: 200px;
+				background: rgba(15,237,28,0.5);
+				position: relative;
+			}
+			#camera{
+				width: 100%;
+				height: 100%;
+				background: rgba(237,15,15,0.5);
+				opacity: 0;
+				filter:alpha(opacity=0);
+			}
+			.success,.fail,.loading{
+				width: auto;
+				height: auto;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%,-50%);
+			}
+			.loading{
+				color: yellow;
+			}
+			.success{
+				color: green;
+			}
+			.fail{
+				color: red;
+			}
+			
+		</style>
+	</head>
+
+	<body>
+		<div>
+			<input type="file" name="camera" id="camera" accept="image/*" value="" multiple />
+			<p class="loading">上传中...</p>
+			<p class="success">上传成功</p>
+			<p class="fail" >上传失败</p>
+		</div>
+		<script>
+			;(function() {
+				(function () {
+					Object.create = Object.create || function (o) {
+						if (typeof O != 'object') {
+					        throw TypeError('必须要对象');
+					      }
+						var F = function () {};
+						F.prototype = o;
+						return new F();
+					}
+				})();
+				var unit = {
+					each: function(arr, fn) {
+						var i = 0,
+							len = arr.length,
+							_this = this;
+						while(i < len) {
+							if(fn) {
+								var ret = fn.call(this, arr[i], i,_this);
+								if(typeof ret !== "undefined" && (ret == null || ret == false)) break;
+							}
+							i++;
+						}
+					},
+					isFunction:function (obj) {
+						if(obj && typeof obj == 'function' && Object.prototype.toString.call(obj) == "[object Function]"){
+							return true;
+						}
+						return false;
+					},
+					isArray:function (obj) {
+						if(obj && typeof obj == 'object' && Object.prototype.toString.call(obj) == "[object Array]"){
+							return true;
+						}
+						return false;
+					},
+					isObject:function (obj) {
+						if(obj && typeof obj == 'object' && Object.prototype.toString.call(obj) == "[object Object]"){
+							return true;
+						}
+						return false;
+					},
+					extend: function() {
+						var options, name, src, copy, copyIsArray, clone,
+							target = arguments[0] || {},
+							i = 1,
+							length = arguments.length,
+							deep = false;
+						if(typeof target === "boolean") {
+							deep = target;
+							target = arguments[i] || {};
+							i++;
+						}
+						if(typeof target !== "object" && !unit.isFunction(target)) {
+							target = {};
+						}
+						if(i === length) {
+							target = this;
+							i--;
+						}
+						for(; i < length; i++) {
+							// Only deal with non-null/undefined values
+							if((options = arguments[i]) != null) {
+								// Extend the base object
+								for(name in options) {
+									src = target[name];
+									copy = options[name];
+									// Prevent never-ending loop
+									if(target === copy) {
+										continue;
+									}
+									// Recurse if we're merging plain objects or arrays
+									if(deep && copy && (unit.isObject(copy) || (copyIsArray = unit.isArray(copy))) ) {
+										if(copyIsArray) {
+											copyIsArray = false;
+											clone = src && unit.isArray(src) ? src : [];
+
+										} else {
+											clone = src && unit.isObject(src) ? src : {};
+										}
+										// Never move original objects, clone them
+										target[name] = unit.extend(deep, clone, copy);
+
+										// Don't bring in undefined values
+									} else if(copy !== undefined) {
+										target[name] = copy;
+									}
+								}
+							}
+						}
+						// Return the modified object
+						return target
+					},
+					toast:function(optipns){
+						var _default = null,
+							_style = {
+								width:'auto',
+								height:'auto',
+								background:'rgba(0,0,0,0.7)',
+								color:'#FFFFFF',
+								padding:'0.5em',
+								borderRadius:'0.5em',
+								position:'fixed',
+								top:'80%',
+								left:'50%',
+								transform:'translate(-50%,-50%)',
+								'-webkitFontSmoothing':'antialiased',
+								'-mozOsxFontSmoothing':'grayscale',
+								transition:'all 0.5s',
+								textAlign:'center'
+							},
+							div = document.createElement('div'),
+							timer = null,
+							_position = [{
+								position:'top',
+								ins:'20%'
+							},{
+								position:'middle',
+								ins:'50%'
+							},{
+								position:'bottom',
+								ins:'80%'
+							}];
+						if(!optipns){throw '传入参数错误'};
+						if(typeof optipns  == 'string'){
+							_default = unit.extend({},{
+								message:optipns,
+								position:'bottom',
+								duration:3000  //毫秒
+							});
+						}else{
+							_default = unit.extend({},{
+								message:'',
+								position:'bottom',
+								duration:3000  //毫秒
+							},optipns);
+						}
+						div.innerHTML = _default.message;
+						_style = unit.extend(_style,{position:_default.Position});
+						unit.each(_position,function (item,index) {
+							if(item.position == _default.position.toLowerCase()){
+								_style.top = item.ins;
+								return false;
+							}
+						})
+						for (var key in _style) {
+							div.style[key] = _style[key];
+						}
+						document.querySelector('body').appendChild(div);
+						timer = setTimeout(function () {
+							clearTimeout(timer);
+							div.remove();
+						},_default.duration)
+					},
+					timeChunk:function (arr,fn,num,intervalTime) {
+						var timer = null,
+							len = arr.length,
+							_this = this;
+						function start () {
+							var i = 0;
+							while(i < Math.min(num || 8,len)){
+								var tempData = 	arr.shift();
+								fn && fn(tempData,i,_this);
+								i++;
+							}
+						}
+						return function () {
+							timer = setInterval(function () {
+								if(arr.length == 0){return clearInterval(timer);}
+								start();
+							},intervalTime ||200);
+						}
+					}
+				};
+				
+			
+				function LcUpLoad (config) {
+					if (typeof config != 'object') {
+				        throw TypeError('必须要对象');
+				   }
+					var _default = {
+						PHOTOLIMIT:1000,
+						SIZELIMIT:4,
+						IMGSTATUS:[],
+						CURRENTPHOTOINDEX:0,
+						LOADINGSTATUS:0
+					}
+					config = this.extend({},_default,config)
+					this.bridge(config);
+				}
+				LcUpLoad.prototype = Object.create(unit);
+				LcUpLoad.prototype.bridge = function(targetObj){
+					for (var key in targetObj) {
+						this.proxy(this,key,targetObj[key]);
+					}
+				};
+				LcUpLoad.prototype.proxy = function(obj,keyName,value){
+					Object.defineProperty(obj,keyName,{
+						configurable: false,
+					    enumerable: true,
+					    set:function (newValue) {
+					    	if(value === newValue){
+					    		return;
+					    	}
+					    	value = newValue;
+					    },
+					    get:function () {
+					    	return value;
+					    }
+					});
+				};
+				LcUpLoad.prototype.length = function(length) {
+						if(length*1 > 0) {
+							return true;
+						} else {
+							this.toast('您没有选择任何文件')
+							return false;
+						}
+					};
+				LcUpLoad.prototype.type = function(file) {
+						var reg = /image/;
+						if(reg.test(file)){
+							return true;
+						} else {
+							this.toast('您选择的中有文件不是图片类型，请重新选择');
+							return false;
+						}
+					}
+				LcUpLoad.prototype.size = function(file) {
+						if(file*1 < this.SIZELIMIT*1024*1024) {
+							return true;
+						} else {
+							this.toast({
+								message: '您选择的文件中有大于'+this.SIZELIMIT+'M的，请重新选择',
+								position: 'bottom',
+								duration: 3000
+							});
+							return false;
+						}
+					}
+				LcUpLoad.prototype.test = function(file) {
+						var _this = this;
+						if(!this.length(file.length)){return false};
+						this.each(file,function (item,index) {
+							for (var key in item) {
+								if(_this[key] && !_this[key](item[key])) {
+									return false;
+								}	
+							}
+						})
+					}
+				LcUpLoad.prototype.fileReader = function(fileVal, fn) {
+						var _this = this;
+						const reader = new FileReader();
+						reader.readAsDataURL(fileVal);
+						reader.onload = function() {
+							_this.status(reader.result,function (currentItem) {
+								fn(reader.result,currentItem);
+							})
+						}
+				}
+				LcUpLoad.prototype.getFiles = function(el, file,fn) {
+						var _this = this;
+						if(this.test(file) == false) {return;}
+						var tempArr = [];
+						this.each(file,function (item) {
+							tempArr.push(item);
+						})
+						var _timeThunk = this.timeChunk(tempArr,function (item,index,me) {
+							if((index*1+1) <= me.PHOTOLIMIT) {
+								if(typeof item == 'object') {
+									me.fileReader(item, fn);
+								}
+							}else{
+								me.toast({
+									message: '您选择的文件大于' + me.PHOTOLIMIT + '张，仅保留前' + me.PHOTOLIMIT + '张',
+									position: 'bottom',
+									duration: 3000
+								});
+								return false;
+							}
+						});
+						_timeThunk();
+						el.currentTarget.value = '';  //这个很重要,没有这个不能重复提交同一张图片
+					}
+				LcUpLoad.prototype.status = function(result,fn) {
+					var currentItem = {
+						id:this.CURRENTPHOTOINDEX++,
+						loadingStatus:this.LOADINGSTATUS,
+						imgUrl:result
+					};
+					this.IMGSTATUS.push(currentItem)
+					fn && fn(currentItem);
+				}
+				LcUpLoad.prototype.changeStatus = function(index,status) {
+					if(!index && !status){throw '参数错误'};
+					this.IMGSTATUS[index].loadingStatus = status;
+					console.log('当前的状态:'+this.IMGSTATUS[index].loadingStatus)
+				}
+				LcUpLoad.prototype.del = function(index) {
+					this.IMGSTATUS.splice(index,1);
+				}
+				window.use = function (options) {
+					if(this instanceof use){throw '该函数不能实例化'};
+					return new LcUpLoad(options);
+				}
+			})();
+			
+			window.onload = function () {
+				var upLoad = use({PHOTOLIMIT:1000,SIZELIMIT:4,LOADINGSTATUS:0}), //上传照片限制，上传照片大小限制：单位是m，当前图片状态
+					upIpt = document.querySelector('input[type=file]');
+					upIpt.onchange = function (e) {
+						var file = e.target.files;
+						upLoad.getFiles(e,file,function (url,currentItem) {
+							var ran = Math.random();
+							if(ran>0.5){
+								setTimeout(function () {
+									currentItem.loadingStatus = 1;
+									console.log('当ran为'+ran,currentItem.id+'的状态码为'+currentItem.loadingStatus); //模拟ajax成功为1，失败为2
+									console.log(upLoad.IMGSTATUS)
+								},3000);
+							}else{
+								setTimeout(function () {
+									currentItem.loadingStatus = 2;
+									console.log('当ran为'+ran,currentItem.id+'的状态码为'+currentItem.loadingStatus);
+									console.log(upLoad.IMGSTATUS)
+								},1000);
+							}
+						})
+					}
+					
+			}
+//			注意事项:
+			//在上传失败了之后，点击图片重新上传的时候，需要调用upload.changeStatus方法
+			//在删除图片的时候要调用upload.del方法
+			//在vue和react中，只需要将你的this.data和this.state.data等于upLoad.IMGSTATUS即可，
+//			亮点:
+//			纯原生,不依赖任何框架,
+//			上传图片做了优化，不至于上传图片过多的时候对服务器造成过大的压力
+//			自行定义图片状态码
+//			缺点:
+//			在对上传的图片进行检查的时候，用了双层循环，时间复杂度和空间复杂度稍有上升
+
+		</script>
+
+	</body>
+
+</html>
